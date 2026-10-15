@@ -1,0 +1,27 @@
+Package: parqpost
+Title: Selective Access to Posterior Draws in Parquet
+Version: 0.1.0
+Authors@R: person("parqpost", "contributors", role = c("aut", "cre"),
+    email = "maintainer@example.com")
+Description: Access posterior draws stored in Parquet through lazy Arrow
+    queries. Select parameters and subset chains and iterations before reading
+    values into memory, reshape indexed draws, compute convergence diagnostics,
+    and produce exact equal-tailed credible intervals for plotting.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Imports:
+    arrow (>= 12.0.0),
+    dplyr (>= 1.1.1),
+    posterior (>= 1.4.0),
+    rlang,
+    tibble,
+    tidyselect
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    tidybayes
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+RoxygenNote: 7.1.2

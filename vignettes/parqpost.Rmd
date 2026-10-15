@@ -1,0 +1,84 @@
+---
+title: "Selective posterior analysis with parqpost"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Selective posterior analysis with parqpost}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(parqpost)
+```
+
+Save post-warmup posterior draws once in wide format. Each parameter element
+has its own column, and draw identifiers are explicit.
+
+```{r storage}
+path <- tempfile(fileext = ".parquet")
+samples <- posterior::as_draws_df(posterior::example_draws())
+write_draws(samples, path)
+draws <- open_draws(path)
+draws
+variables(draws)
+```
+
+The object above holds a lazy Arrow query. Selecting parameter families and
+filtering identifiers changes that query without collecting draw values.
+
+```{r selection}
+selected <- draws |>
+  select_draws(c("mu", "theta")) |>
+  subset_draws(chain = 1:4, iteration = 51:100)
+
+wide <- collect_draws(selected)
+head(wide)
+```
+
+The collection step reads only selected columns and returns a posterior
+`draws_df` with original identifiers. To put array indices into columns, use
+spread expressions. Scalars are broadcast across array indices.
+
+```{r spreading}
+tidy <- spread_draws(selected, mu, theta[school])
+head(tidy)
+```
+
+Use dplyr after spreading to compute derived quantities. Here the result remains
+grouped by school.
+
+```{r manipulation}
+centered <- dplyr::mutate(tidy, centered = theta - mu)
+head(centered)
+```
+
+Diagnostics need complete, equally indexed chains. The package orders draws
+before delegating numerical calculations to posterior.
+
+```{r diagnostics}
+diagnose_draws(selected, variables = "theta")
+```
+
+For plots, compute exact equal-tailed intervals directly from the selected wide
+columns. This avoids creating a long data frame with every draw and index.
+
+```{r intervals}
+intervals <- summarise_intervals(
+  selected, theta[school], .width = c(0.5, 0.8, 0.95)
+)
+intervals
+```
+
+Map `school` to the plot's position, `.value` to its point, `.lower` and `.upper`
+to interval endpoints, and `.width` to interval width or opacity. For summaries
+of derived quantities, use the in-memory data with tidybayes or dplyr.
+
+Opening and selection are lazy; collecting, spreading, diagnostics, and interval
+summaries materialize the required draws. Selected draws and expanded spread
+results must fit in memory. Regex expressions, omitted dimensions, and `|`
+widening are outside the supported spread syntax.
+
+```{r cleanup, include=FALSE}
+unlink(path)
+```

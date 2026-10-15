@@ -1,0 +1,4 @@
+^benchmarks$
+^\.gitignore$
+^parqpost_.*$
+^.*\.Rcheck$
